@@ -92,7 +92,7 @@ class Simulator:
                                             requesting instruments that _are_
                                             present get the full number.
         """
-        self._config = config
+        self.config = config
         self._loop = loop
         self._attached_instruments = attached_instruments
         self._stubbed_attached_modules = attached_modules

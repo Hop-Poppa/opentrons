@@ -3,7 +3,8 @@
 import * as React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { push } from 'connected-react-router'
-import { Card, LabeledToggle, LabeledButton } from '@opentrons/components'
+import { Card, LabeledToggle, LabeledButton, Icon } from '@opentrons/components'
+import { CardContentFull } from '../layout'
 
 import { startDeckCalibration } from '../../http-api-client'
 import { getFeatureFlags } from '../../config'
@@ -23,6 +24,7 @@ import type { State, Dispatch } from '../../types'
 import type { ViewableRobot } from '../../discovery/types'
 import { Portal } from '../portal'
 import { CheckCalibration } from '../CheckCalibration'
+import styles from './styles.css'
 
 type Props = {|
   robot: ViewableRobot,
@@ -36,10 +38,16 @@ const CALIBRATE_DECK_DESCRIPTION =
 
 const CHECK_ROBOT_CAL_DESCRIPTION = "Check the robot's deck calibration"
 
+const ROBOT_CAL_ERROR = 'Bad robot calibration data detected'
+const ROBOT_CAL_ERROR_DESCRIPTION =
+  'Do not run any protocols or check calibration as robot is likely to experience a crash.'
+const ROBOT_CAL_ERROR_RESOLUTION =
+  'Please view this link to learn more on how to re-calibrate robot and resolve bad calibration data.'
+
 export function ControlsCard(props: Props) {
   const dispatch = useDispatch<Dispatch>()
   const { robot, calibrateDeckUrl } = props
-  const { name: robotName, status } = robot
+  const { name: robotName, status, health } = robot
   const ff = useSelector(getFeatureFlags)
   const lightsOn = useSelector((state: State) => getLightsOn(state, robotName))
   const isRunning = useSelector(robotSelectors.getIsRunning)
@@ -67,16 +75,36 @@ export function ControlsCard(props: Props) {
   return (
     <Card title={TITLE} disabled={notConnectable}>
       {ff.enableRobotCalCheck && (
-        <LabeledButton
-          label="Check deck calibration"
-          buttonProps={{
-            onClick: () => setIsCheckingRobotCal(true),
-            disabled: buttonDisabled,
-            children: 'Check',
-          }}
-        >
-          <p>{CHECK_ROBOT_CAL_DESCRIPTION}</p>
-        </LabeledButton>
+        <>
+          <LabeledButton
+            label="Check deck calibration"
+            buttonProps={{
+              onClick: () => setIsCheckingRobotCal(true),
+              disabled: buttonDisabled,
+              children: 'Check',
+            }}
+          >
+            <p>{CHECK_ROBOT_CAL_DESCRIPTION}</p>
+          </LabeledButton>
+
+          {health && health.valid_calibration && (
+            <div className={styles.cal_check_error_wrapper}>
+              <Icon
+                name={'alert-circle'}
+                className={styles.cal_check_error_icon}
+              />
+              <div>
+                <h4 className={styles.cal_check_error}>{ROBOT_CAL_ERROR}</h4>
+                <p className={styles.cal_check_error}>
+                  {ROBOT_CAL_ERROR_DESCRIPTION}
+                </p>
+                <p className={styles.cal_check_error}>
+                  {ROBOT_CAL_ERROR_RESOLUTION}
+                </p>
+              </div>
+            </div>
+          )}
+        </>
       )}
       <LabeledButton
         label="Calibrate deck"

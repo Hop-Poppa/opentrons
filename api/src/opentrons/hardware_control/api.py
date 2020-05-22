@@ -4,6 +4,7 @@ import logging
 import pathlib
 from collections import OrderedDict
 from typing import Dict, Union, List, Optional, Tuple
+from numpy.linalg import inv  # type: ignore
 from opentrons import types as top_types
 from opentrons.util import linal
 from opentrons.config import robot_configs, pipette_config
@@ -73,6 +74,7 @@ class API(HardwareAPILike):
         # home() call succeeds or fails.
         self._motion_lock = asyncio.Lock(loop=self._loop)
         self._door_state = DoorState.CLOSED
+        self._valid_transform = True
 
     @property
     def door_state(self) -> DoorState:
@@ -198,6 +200,31 @@ class API(HardwareAPILike):
     def is_simulator(self):
         """ `True` if this is a simulator; `False` otherwise. """
         return isinstance(self._backend, Simulator)
+
+    @property
+    def valid_transform(self):
+        return self._valid_transform
+
+    def validate_calibration(self):
+        """
+        This function determines whether the current gantry
+        calibration is valid or not based on the following use-cases:
+
+        """
+        curr_cal = self._backend.config.gantry_calibration
+        print(type(curr_cal))
+        id_matrix = linal.identity_deck_transform
+        singular = curr_cal * inv(curr_cal) == id_matrix
+        is_identity = id_matrix == curr_cal
+        outofrange = False
+        # Check that the matrix is non-singular
+        if singular:
+            self._valid_transform = False
+        elif is_identity:
+            self._valid_transform = False
+        elif outofrange:
+            self._valid_transform = False
+        self._valid_transform = True
 
     async def register_callback(self, cb):
         """ Allows the caller to register a callback, and returns a closure
