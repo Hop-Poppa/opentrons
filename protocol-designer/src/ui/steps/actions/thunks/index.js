@@ -11,18 +11,20 @@ import { uuid } from '../../../../utils'
 import { selectors as labwareIngredsSelectors } from '../../../../labware-ingred/selectors'
 import { getSelectedStepId } from '../../selectors'
 import { addStep } from '../actions'
-import { actions as tutorialActions } from '../../../../tutorial'
+import {
+  actions as tutorialActions,
+  selectors as tutorialSelectors,
+} from '../../../../tutorial'
 
 import * as uiModuleSelectors from '../../../../ui/modules/selectors'
 import type { DuplicateStepAction } from '../types'
 
 import type { StepType, StepIdType, FormData } from '../../../../form-types'
-import type { GetState, ThunkDispatch } from '../../../../types'
+import type { ThunkAction } from '../../../../types'
 
-export const addAndSelectStepWithHints = (payload: { stepType: StepType }) => (
-  dispatch: ThunkDispatch<*>,
-  getState: GetState
-) => {
+export const addAndSelectStepWithHints: ({
+  stepType: StepType,
+}) => ThunkAction<any> = payload => (dispatch, getState) => {
   dispatch(addStep({ stepType: payload.stepType }))
   const state = getState()
   const deckHasLiquid = labwareIngredsSelectors.getDeckHasLiquid(state)
@@ -67,10 +69,9 @@ export type ReorderSelectedStepAction = {
   },
 }
 
-export const reorderSelectedStep = (delta: number) => (
-  dispatch: ThunkDispatch<ReorderSelectedStepAction>,
-  getState: GetState
-) => {
+export const reorderSelectedStep: (
+  delta: number
+) => ThunkAction<ReorderSelectedStepAction> = delta => (dispatch, getState) => {
   const stepId = getSelectedStepId(getState())
 
   if (stepId != null) {
@@ -84,10 +85,9 @@ export const reorderSelectedStep = (delta: number) => (
   }
 }
 
-export const duplicateStep = (stepId: StepIdType) => (
-  dispatch: ThunkDispatch<DuplicateStepAction>,
-  getState: GetState
-) => {
+export const duplicateStep: (
+  stepId: StepIdType
+) => ThunkAction<DuplicateStepAction> = stepId => (dispatch, getState) => {
   const duplicateStepId = uuid()
 
   if (stepId != null) {
@@ -111,10 +111,10 @@ export const _saveStepForm = (form: FormData): SaveStepFormAction => ({
 })
 
 /** take unsavedForm state and put it into the payload */
-export const saveStepForm = () => (
-  dispatch: ThunkDispatch<*>,
-  getState: GetState
-): void => {
+export const saveStepForm: () => ThunkAction<any> = () => (
+  dispatch,
+  getState
+) => {
   const initialState = getState()
   const unsavedForm = getUnsavedForm(initialState)
 
@@ -127,16 +127,20 @@ export const saveStepForm = () => (
     return
   }
 
+  if (tutorialSelectors.shouldShowCoolingHint(initialState)) {
+    dispatch(tutorialActions.addHint('thermocycler_lid_passive_cooling'))
+  }
+
   // save the form
   dispatch(_saveStepForm(unsavedForm))
 }
 
 /** "power action", mimicking saving the never-saved "set temperature X" step,
  ** then creating and saving a "pause until temp X" step */
-export const saveSetTempFormWithAddedPauseUntilTemp = () => (
-  dispatch: ThunkDispatch<*>,
-  getState: GetState
-): void => {
+export const saveSetTempFormWithAddedPauseUntilTemp: () => ThunkAction<any> = () => (
+  dispatch,
+  getState
+) => {
   const initialState = getState()
   const unsavedSetTemperatureForm = getUnsavedForm(initialState)
   const isPristineSetTempForm = getUnsavedFormIsPristineSetTempForm(

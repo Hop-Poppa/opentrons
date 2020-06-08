@@ -16,15 +16,20 @@ type OP = {||}
 type SP = {|
   nextPipette: Pipette | null,
   labware: Array<Labware>,
-  nextLabware: Labware,
+  nextLabware: Labware | void,
   isTipsProbed: boolean,
 |}
 
 type Props = {| ...OP, ...SP, dispatch: Dispatch |}
 
-export const Calibrate = connect<Props, OP, SP, _, _, _>(mapStateToProps)(
-  CalibrateComponent
-)
+export const Calibrate: React.AbstractComponent<OP> = connect<
+  Props,
+  OP,
+  SP,
+  _,
+  _,
+  _
+>(mapStateToProps)(CalibrateComponent)
 
 function CalibrateComponent(props: Props) {
   const { path } = useRouteMatch()

@@ -50,3 +50,82 @@ export const reorderSteps = (
   type: 'REORDER_STEPS',
   payload: { stepIds },
 })
+
+export type AddProfileStepAction = {|
+  type: 'ADD_PROFILE_STEP',
+  payload: null | {| cycleId: string |},
+|}
+export const addProfileStep = (
+  payload: $PropertyType<AddProfileStepAction, 'payload'>
+) => ({
+  type: 'ADD_PROFILE_STEP',
+  payload,
+})
+
+export type DeleteProfileCycleAction = {|
+  type: 'DELETE_PROFILE_CYCLE',
+  payload: {| id: string |},
+|}
+export const deleteProfileCycle = (
+  payload: $PropertyType<DeleteProfileCycleAction, 'payload'>
+) => ({
+  type: 'DELETE_PROFILE_CYCLE',
+  payload,
+})
+
+export type DeleteProfileStepAction = {|
+  type: 'DELETE_PROFILE_STEP',
+  payload: {| id: string |},
+|}
+export const deleteProfileStep = (
+  payload: $PropertyType<DeleteProfileStepAction, 'payload'>
+) => ({
+  type: 'DELETE_PROFILE_STEP',
+  payload,
+})
+
+export type EditProfileCycleAction = {|
+  type: 'EDIT_PROFILE_CYCLE',
+  payload: {|
+    id: string,
+    fields: {|
+      repetitions?: string,
+    |},
+  |},
+|}
+export const editProfileCycle = (
+  payload: $PropertyType<EditProfileCycleAction, 'payload'>
+) => ({
+  type: 'EDIT_PROFILE_CYCLE',
+  payload,
+})
+
+export type EditProfileStepAction = {|
+  type: 'EDIT_PROFILE_STEP',
+  payload: {|
+    id: string,
+    fields: {|
+      title?: string,
+      temperature?: string,
+      durationMinutes?: string,
+      durationSeconds?: string,
+    |},
+  |},
+|}
+export const editProfileStep = (
+  payload: $PropertyType<EditProfileStepAction, 'payload'>
+) => ({
+  type: 'EDIT_PROFILE_STEP',
+  payload,
+})
+
+export type AddProfileCycleAction = {|
+  type: 'ADD_PROFILE_CYCLE',
+  payload: null,
+|}
+export const addProfileCycle = (
+  payload: $PropertyType<AddProfileStepAction, 'payload'>
+) => ({
+  type: 'ADD_PROFILE_CYCLE',
+  payload,
+})

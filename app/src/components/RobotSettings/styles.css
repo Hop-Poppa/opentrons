@@ -100,7 +100,7 @@
 
   color: var(--c-error);
   margin-right: auto;
-
+  padding-right: 0.25rem;
 }
 
 .cal_check_error_icon {
@@ -108,6 +108,7 @@
   width: 1.5rem;
   height: 1.5rem;
   padding-right: 0.25rem;
+  padding-left: 0.25rem;
 }
 
 

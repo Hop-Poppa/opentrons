@@ -1,51 +1,70 @@
 // @flow
 
-import * as Types from '../types'
-import * as Constants from '../constants'
 import { POST, DELETE, GET } from '../../robot-api'
 import {
   makeResponseFixtures,
   mockV2ErrorResponse,
 } from '../../robot-api/__fixtures__'
+import { mockRobotCalibrationCheckSessionDetails } from '../../calibration/__fixtures__'
 
+import type { ResponseFixtures } from '../../robot-api/__fixtures__'
 import type { RobotApiV2ErrorResponseBody } from '../../robot-api/types'
 
-export const mockSessionData: Types.Session = {
-  sessionType: 'calibrationCheck',
-  details: { someData: 5 },
+import * as Types from '../types'
+import * as Constants from '../constants'
+
+export const mockSessionId: string = 'fake_session_id'
+export const mockOtherSessionId: string = 'other_fake_session_id'
+
+export const mockSessionAttributes: Types.SessionResponseAttributes = {
+  sessionType: Constants.SESSION_TYPE_CALIBRATION_CHECK,
+  details: mockRobotCalibrationCheckSessionDetails,
 }
 
-export const mockSessionCommand: Types.SessionCommand = {
-  command: 'dosomething',
+export const mockSession: Types.Session = {
+  ...mockSessionAttributes,
+  id: mockSessionId,
+}
+
+export const mockSessionCommand: Types.SessionCommandAttributes = {
+  command: 'jog',
   data: { someData: 32 },
 }
 
-export const mockSessionCommandData: Types.SessionCommand = {
-  command: '4321',
+export const mockSessionCommandAttributes: Types.SessionCommandAttributes = {
+  command: 'preparePipette',
   status: 'accepted',
   data: {},
 }
 
 export const mockSessionResponse: Types.SessionResponse = {
   data: {
-    id: '1234',
+    id: mockSessionId,
     type: 'Session',
-    attributes: mockSessionData,
+    attributes: mockSessionAttributes,
   },
+}
+
+export const mockMultiSessionResponse: Types.MultiSessionResponse = {
+  data: [
+    {
+      id: mockSessionId,
+      type: 'Session',
+      attributes: mockSessionAttributes,
+    },
+    {
+      id: mockOtherSessionId,
+      type: 'Session',
+      attributes: mockSessionAttributes,
+    },
+  ],
 }
 
 export const mockSessionCommandResponse: Types.SessionCommandResponse = {
   data: {
-    id: '4321',
+    id: mockSessionId,
     type: 'SessionCommand',
-    attributes: mockSessionCommandData,
-  },
-  meta: {
-    sessionType: 'calibrationCheck',
-    details: {
-      someData: 15,
-      someOtherData: 'hi',
-    },
+    attributes: mockSessionCommandAttributes,
   },
 }
 
@@ -54,7 +73,10 @@ export const {
   failureMeta: mockCreateSessionFailureMeta,
   success: mockCreateSessionSuccess,
   failure: mockCreateSessionFailure,
-} = makeResponseFixtures<Types.SessionResponse, RobotApiV2ErrorResponseBody>({
+}: ResponseFixtures<
+  Types.SessionResponse,
+  RobotApiV2ErrorResponseBody
+> = makeResponseFixtures({
   method: POST,
   path: Constants.SESSIONS_PATH,
   successStatus: 201,
@@ -68,9 +90,12 @@ export const {
   failureMeta: mockDeleteSessionFailureMeta,
   success: mockDeleteSessionSuccess,
   failure: mockDeleteSessionFailure,
-} = makeResponseFixtures<Types.SessionResponse, RobotApiV2ErrorResponseBody>({
+}: ResponseFixtures<
+  Types.SessionResponse,
+  RobotApiV2ErrorResponseBody
+> = makeResponseFixtures({
   method: DELETE,
-  path: `${Constants.SESSIONS_PATH}/1234`,
+  path: `${Constants.SESSIONS_PATH}/${mockSessionId}`,
   successStatus: 200,
   successBody: mockSessionResponse,
   failureStatus: 500,
@@ -82,11 +107,31 @@ export const {
   failureMeta: mockFetchSessionFailureMeta,
   success: mockFetchSessionSuccess,
   failure: mockFetchSessionFailure,
-} = makeResponseFixtures<Types.SessionResponse, RobotApiV2ErrorResponseBody>({
+}: ResponseFixtures<
+  Types.SessionResponse,
+  RobotApiV2ErrorResponseBody
+> = makeResponseFixtures({
   method: GET,
-  path: `${Constants.SESSIONS_PATH}/1234`,
+  path: `${Constants.SESSIONS_PATH}/${mockSessionId}`,
   successStatus: 200,
   successBody: mockSessionResponse,
+  failureStatus: 500,
+  failureBody: mockV2ErrorResponse,
+})
+
+export const {
+  successMeta: mockFetchAllSessionsSuccessMeta,
+  failureMeta: mockFetchAllSessionsFailureMeta,
+  success: mockFetchAllSessionsSuccess,
+  failure: mockFetchAllSessionsFailure,
+}: ResponseFixtures<
+  Types.MultiSessionResponse,
+  RobotApiV2ErrorResponseBody
+> = makeResponseFixtures({
+  method: GET,
+  path: Constants.SESSIONS_PATH,
+  successStatus: 200,
+  successBody: mockMultiSessionResponse,
   failureStatus: 500,
   failureBody: mockV2ErrorResponse,
 })
@@ -96,14 +141,94 @@ export const {
   failureMeta: mockSessionCommandsFailureMeta,
   success: mockSessionCommandsSuccess,
   failure: mockSessionCommandsFailure,
-} = makeResponseFixtures<
+}: ResponseFixtures<
   Types.SessionCommandResponse,
   RobotApiV2ErrorResponseBody
->({
+> = makeResponseFixtures({
   method: GET,
-  path: `${Constants.SESSIONS_PATH}/1234/${Constants.SESSIONS_COMMANDS_PATH_EXTENSION}`,
+  path: `${Constants.SESSIONS_PATH}/${mockSessionId}/${Constants.SESSIONS_COMMANDS_PATH_EXTENSION}`,
   successStatus: 200,
   successBody: mockSessionCommandResponse,
   failureStatus: 500,
   failureBody: mockV2ErrorResponse,
 })
+
+export const mockCalibrationCheckSessionAnalyticsProps = {
+  sessionType: Constants.SESSION_TYPE_CALIBRATION_CHECK,
+  leftPipetteModel:
+    mockRobotCalibrationCheckSessionDetails.instruments.left.model,
+  rightPipetteModel:
+    mockRobotCalibrationCheckSessionDetails.instruments.right.model,
+  comparingFirstPipetteHeightDifferenceVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipetteHeight.differenceVector,
+  comparingFirstPipetteHeightThresholdVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipetteHeight.thresholdVector,
+  comparingFirstPipetteHeightExceedsThreshold:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipetteHeight.exceedsThreshold,
+  comparingFirstPipetteHeightErrorSource:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipetteHeight.transformType,
+  comparingFirstPipettePointOneDifferenceVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointOne.differenceVector,
+  comparingFirstPipettePointOneThresholdVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointOne.thresholdVector,
+  comparingFirstPipettePointOneExceedsThreshold:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointOne.exceedsThreshold,
+  comparingFirstPipettePointOneErrorSource:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointOne.transformType,
+  comparingFirstPipettePointTwoDifferenceVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointTwo.differenceVector,
+  comparingFirstPipettePointTwoThresholdVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointTwo.thresholdVector,
+  comparingFirstPipettePointTwoExceedsThreshold:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointTwo.exceedsThreshold,
+  comparingFirstPipettePointTwoErrorSource:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointTwo.transformType,
+  comparingFirstPipettePointThreeDifferenceVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointThree.differenceVector,
+  comparingFirstPipettePointThreeThresholdVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointThree.thresholdVector,
+  comparingFirstPipettePointThreeExceedsThreshold:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointThree.exceedsThreshold,
+  comparingFirstPipettePointThreeErrorSource:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingFirstPipettePointThree.transformType,
+  comparingSecondPipetteHeightDifferenceVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipetteHeight.differenceVector,
+  comparingSecondPipetteHeightThresholdVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipetteHeight.thresholdVector,
+  comparingSecondPipetteHeightExceedsThreshold:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipetteHeight.exceedsThreshold,
+  comparingSecondPipetteHeightErrorSource:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipetteHeight.transformType,
+  comparingSecondPipettePointOneDifferenceVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipettePointOne.differenceVector,
+  comparingSecondPipettePointOneThresholdVector:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipettePointOne.thresholdVector,
+  comparingSecondPipettePointOneExceedsThreshold:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipettePointOne.exceedsThreshold,
+  comparingSecondPipettePointOneErrorSource:
+    mockRobotCalibrationCheckSessionDetails.comparisonsByStep
+      .comparingSecondPipettePointOne.transformType,
+}

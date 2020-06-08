@@ -36,7 +36,7 @@ const TITLE = 'Robot Controls'
 const CALIBRATE_DECK_DESCRIPTION =
   "Calibrate the position of the robot's deck. Recommended for all new robots and after moving robots."
 
-const CHECK_ROBOT_CAL_DESCRIPTION = "Check the robot's deck calibration"
+const CHECK_ROBOT_CAL_DESCRIPTION = "Check the robot's calibration state"
 
 const ROBOT_CAL_ERROR = 'Bad robot calibration data detected'
 const ROBOT_CAL_ERROR_DESCRIPTION =
@@ -44,7 +44,7 @@ const ROBOT_CAL_ERROR_DESCRIPTION =
 const ROBOT_CAL_ERROR_RESOLUTION =
   'Please view this link to learn more on how to re-calibrate robot and resolve bad calibration data.'
 
-export function ControlsCard(props: Props) {
+export function ControlsCard(props: Props): React.Node {
   const dispatch = useDispatch<Dispatch>()
   const { robot, calibrateDeckUrl } = props
   const { name: robotName, status, health } = robot
@@ -87,7 +87,7 @@ export function ControlsCard(props: Props) {
             <p>{CHECK_ROBOT_CAL_DESCRIPTION}</p>
           </LabeledButton>
 
-          {health && health.valid_calibration && (
+          {health && !health.valid_calibration && (
             <div className={styles.cal_check_error_wrapper}>
               <Icon
                 name={'alert-circle'}

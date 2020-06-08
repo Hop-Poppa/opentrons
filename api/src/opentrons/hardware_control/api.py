@@ -2,9 +2,9 @@ import asyncio
 import contextlib
 import logging
 import pathlib
+import numpy as np
 from collections import OrderedDict
 from typing import Dict, Union, List, Optional, Tuple
-from numpy.linalg import inv  # type: ignore
 from opentrons import types as top_types
 from opentrons.util import linal
 from opentrons.config import robot_configs, pipette_config
@@ -19,8 +19,10 @@ from .constants import (SHAKE_OFF_TIPS_SPEED, SHAKE_OFF_TIPS_DROP_DISTANCE,
                         DROP_TIP_RELEASE_DISTANCE)
 from .execution_manager import ExecutionManager
 from .types import (Axis, HardwareAPILike, CriticalPoint,
-                    MustHomeError, NoTipAttachedError, DoorState)
+                    MustHomeError, NoTipAttachedError, DoorState,
+                    DoorStateNotification)
 from . import modules
+
 
 mod_log = logging.getLogger(__name__)
 
@@ -88,6 +90,13 @@ class API(HardwareAPILike):
         mod_log.info(
             f'Updating the window switch status: {door_state}')
         self.door_state = door_state
+        for cb in self._callbacks:
+            hw_event = DoorStateNotification(
+                new_state=door_state)
+            try:
+                cb(hw_event)
+            except Exception:
+                mod_log.exception('Errored during door state event callback')
 
     @classmethod
     async def build_hardware_controller(
@@ -179,8 +188,9 @@ class API(HardwareAPILike):
                             strict_attached_instruments)
         await backend.setup_gpio_chardev()
         api_instance = cls(backend, loop=checked_loop, config=config)
-        checked_loop.create_task(backend.watch_modules(
-                register_modules=api_instance.register_modules))
+        await api_instance.cache_instruments()
+        await backend.watch_modules(
+                register_modules=api_instance.register_modules)
         return api_instance
 
     def __repr__(self):
@@ -202,7 +212,7 @@ class API(HardwareAPILike):
         return isinstance(self._backend, Simulator)
 
     @property
-    def valid_transform(self):
+    def valid_transform(self) -> bool:
         return self._valid_transform
 
     def validate_calibration(self):
@@ -210,21 +220,38 @@ class API(HardwareAPILike):
         This function determines whether the current gantry
         calibration is valid or not based on the following use-cases:
 
+        1. Matrix is singular. This would mean that the translation of a
+        point has infinitely many solutions, which is incorrect. It would
+        result in some very strange behavior on the robot.
+        2. Matrix is the identity matrix. This means that there is no
+        translation to be found, and no known z component. That would
+        likely lead to a lot of crashes on the robot.
+        3. Matrix is out of range. The translation of the coordinates on
+        the deck are wildly off.
         """
-        curr_cal = self._backend.config.gantry_calibration
-        print(type(curr_cal))
-        id_matrix = linal.identity_deck_transform
-        singular = curr_cal * inv(curr_cal) == id_matrix
-        is_identity = id_matrix == curr_cal
-        outofrange = False
-        # Check that the matrix is non-singular
-        if singular:
+        curr_cal = np.array(self._config.gantry_calibration)
+        row, col = curr_cal.shape
+        rank = np.linalg.matrix_rank(curr_cal)
+
+        id_matrix = linal.identity_deck_transform()
+
+        x = abs(curr_cal[0][-1])
+        y = abs(curr_cal[1][-1])
+        z = abs(curr_cal[2][-1])
+
+        outofrange = x > 3 or y > 3 or z < 20 or z > 30
+        if row != rank:
+            # Check that the matrix is non-singular
             self._valid_transform = False
-        elif is_identity:
+        elif np.array_equal(curr_cal, id_matrix):
+            # Check that the matrix is not an identity
             self._valid_transform = False
         elif outofrange:
+            # Check that the matrix is not out of range.
             self._valid_transform = False
-        self._valid_transform = True
+        else:
+            # Transform as it stands is sufficient.
+            self._valid_transform = True
 
     async def register_callback(self, cb):
         """ Allows the caller to register a callback, and returns a closure
@@ -1688,3 +1715,7 @@ class API(HardwareAPILike):
             self._config.gantry_calibration,
             (0, 0, max_height))
         return transformed_z
+
+    def clean_up(self):
+        """ Get the API ready to stop cleanly. """
+        self._backend.clean_up()

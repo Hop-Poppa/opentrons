@@ -29,6 +29,8 @@ import typeof {
   PICKED_UP,
   CONFIRMING,
   CONFIRMED,
+  DOOR_OPEN,
+  DOOR_CLOSED,
 } from './constants'
 
 import * as ApiTypes from './api-types'
@@ -80,7 +82,19 @@ export type Command = {
   handledAt: ?number,
   // subcommands
   children: number[],
+  ...
 }
+
+// protocol command graph node
+// contructed from Command
+export type CommandNode = {|
+  id: number,
+  description: string,
+  handledAt: ?number,
+  isCurrent: boolean,
+  isLast: boolean,
+  children: Array<CommandNode>,
+|}
 
 // instrument as stored in redux state
 export type StatePipette = {|
@@ -164,10 +178,14 @@ export type SessionStatusInfo = {|
   userMessage: string | null,
 |}
 
+export type DoorState = null | DOOR_OPEN | DOOR_CLOSED
+
 export type SessionUpdate = {|
   state: SessionStatus,
   statusInfo: SessionStatusInfo,
   startTime: ?number,
+  doorState: DoorState,
+  blocked: boolean,
   lastCommand: ?{|
     id: number,
     handledAt: number,

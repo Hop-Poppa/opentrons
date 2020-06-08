@@ -33,14 +33,14 @@ const SPECS: Array<SelectorSpec> = [
       sessions: {
         'germanium-cobweb': {
           robotSessions: {
-            '1234': Fixtures.mockSessionData,
+            [Fixtures.mockSessionId]: Fixtures.mockSessionAttributes,
           },
         },
       },
     },
     args: ['germanium-cobweb'],
     expected: {
-      '1234': Fixtures.mockSessionData,
+      [Fixtures.mockSessionId]: Fixtures.mockSessionAttributes,
     },
   },
   {
@@ -50,12 +50,12 @@ const SPECS: Array<SelectorSpec> = [
       sessions: {
         'germanium-cobweb': {
           robotSessions: {
-            '1234': Fixtures.mockSessionData,
+            [Fixtures.mockSessionId]: Fixtures.mockSessionAttributes,
           },
         },
       },
     },
-    args: ['germanium-cobweb', '4321'],
+    args: ['germanium-cobweb', 'non_existent_session_id'],
     expected: null,
   },
   {
@@ -65,13 +65,67 @@ const SPECS: Array<SelectorSpec> = [
       sessions: {
         'germanium-cobweb': {
           robotSessions: {
-            '1234': Fixtures.mockSessionData,
+            [Fixtures.mockSessionId]: Fixtures.mockSessionAttributes,
           },
         },
       },
     },
-    args: ['germanium-cobweb', '1234'],
-    expected: Fixtures.mockSessionData,
+    args: ['germanium-cobweb', Fixtures.mockSessionId],
+    expected: Fixtures.mockSessionAttributes,
+  },
+  {
+    name:
+      'getAnalyticsPropsForRobotSessionById returns props for check cal session',
+    selector: Selectors.getAnalyticsPropsForRobotSessionById,
+    state: {
+      sessions: {
+        'germanium-cobweb': {
+          robotSessions: {
+            [Fixtures.mockSessionId]: Fixtures.mockSessionAttributes,
+          },
+        },
+      },
+    },
+    args: ['germanium-cobweb', Fixtures.mockSessionId],
+    expected: Fixtures.mockCalibrationCheckSessionAnalyticsProps,
+  },
+  {
+    name:
+      'getAnalyticsPropsForRobotSessionById returns null for untracked session type',
+    selector: Selectors.getAnalyticsPropsForRobotSessionById,
+    state: {
+      sessions: {
+        'germanium-cobweb': {
+          robotSessions: {
+            [Fixtures.mockSessionId]: {
+              ...Fixtures.mockSessionAttributes,
+              sessionType: 'FakeUntrackedSessionType',
+            },
+          },
+        },
+      },
+    },
+    args: ['germanium-cobweb', Fixtures.mockSessionId],
+    expected: null,
+  },
+  {
+    name:
+      'getAnalyticsPropsForRobotSessionById returns null if session not found',
+    selector: Selectors.getAnalyticsPropsForRobotSessionById,
+    state: {
+      sessions: {
+        'germanium-cobweb': {
+          robotSessions: {
+            [Fixtures.mockSessionId]: {
+              ...Fixtures.mockSessionAttributes,
+              sessionType: 'FakeUntrackedSessionType',
+            },
+          },
+        },
+      },
+    },
+    args: ['germanium-cobweb', 'fake_nonexistent_session_id'],
+    expected: null,
   },
 ]
 

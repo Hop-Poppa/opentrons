@@ -27,6 +27,8 @@ export type PipetteSelectProps = {|
   tabIndex?: number,
   /** classes to apply to the top-level component */
   className?: string,
+  /** custom id to be applied. likely to be used as a data test id for e2e testing */
+  id?: string,
 |}
 
 // TODO(mc, 2019-10-14): i18n
@@ -47,8 +49,14 @@ const specToOption = ({ name, displayName }: PipetteNameSpecs) => ({
   label: displayName,
 })
 
-export const PipetteSelect = (props: PipetteSelectProps) => {
-  const { tabIndex, className, enableNoneOption, nameBlacklist = [] } = props
+export const PipetteSelect = (props: PipetteSelectProps): React.Node => {
+  const {
+    tabIndex,
+    className,
+    enableNoneOption,
+    id,
+    nameBlacklist = [],
+  } = props
   const whitelist = ({ value }: SelectOption) => {
     return !nameBlacklist.some(n => n === value)
   }
@@ -75,6 +83,7 @@ export const PipetteSelect = (props: PipetteSelectProps) => {
       value={value}
       defaultValue={defaultValue}
       tabIndex={tabIndex}
+      id={id}
       onChange={option => {
         // TODO(mc, 2020-02-03):  change to `option?.value ?? null`
         // when we enable that babel functionality

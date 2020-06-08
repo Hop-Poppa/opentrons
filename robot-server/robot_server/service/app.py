@@ -1,7 +1,7 @@
 import logging
 
 from opentrons import __version__
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import Response, JSONResponse
 from starlette.requests import Request
@@ -9,14 +9,16 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from .logging import initialize_logging
-from .models import V1BasicResponse
+from robot_server.service.legacy.models import V1BasicResponse
 from .errors import V1HandlerError, \
     transform_http_exception_to_json_api_errors, \
     transform_validation_error_to_json_api_errors, \
     consolidate_fastapi_response, RobotServerError, ErrorResponse
 from .dependencies import get_rpc_server
 from robot_server import constants
-from .routers import item, legacy_routes, routes
+from robot_server.service.legacy.routers import legacy_routes
+from robot_server.service.access.router import router as access_router
+from robot_server.service.session.router import router as session_router
 
 
 log = logging.getLogger(__name__)
@@ -42,13 +44,18 @@ app.include_router(router=legacy_routes,
                    })
 
 # New v2 routes
-app.include_router(router=routes)
+routes = APIRouter()
+routes.include_router(router=session_router,
+                      tags=["Session Management"])
+routes.include_router(router=access_router,
+                      tags=["Access Control"])
 
-
-# TODO(isk: 3/18/20): this is an example route, remove item route and model
-# once response work is implemented in new route handlers
-app.include_router(router=item.router,
-                   tags=["Item"])
+app.include_router(router=routes,
+                   responses={
+                       HTTP_422_UNPROCESSABLE_ENTITY: {
+                           "model": ErrorResponse
+                       }
+                   })
 
 
 @app.on_event("startup")

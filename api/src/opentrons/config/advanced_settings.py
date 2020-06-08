@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from functools import lru_cache
 from typing import Any, Dict, Mapping, Tuple, Union, \
     Optional, TYPE_CHECKING, NamedTuple
 
@@ -150,6 +151,14 @@ settings = [
         description='Tells the OT-2 to run the legacy v1 http api.',
         restart_required=True
     ),
+    SettingDefinition(
+        _id='enableDoorSafetySwitch',
+        title='Enable robot door safety switch',
+        description="Automatically pause protocols when robot door opens. "
+                    "Opening the robot door during a run will "
+                    "pause your robot only after it has completed its "
+                    "current motion."
+    )
 ]
 
 if ARCHITECTURE == SystemArchitecture.BUILDROOT:
@@ -162,13 +171,13 @@ settings_by_old_id: Dict[str, SettingDefinition] = \
     {s.old_id: s for s in settings if s.old_id}
 
 
-# TODO: LRU cache?
 def get_adv_setting(setting: str) -> Optional[Setting]:
     setting = _clean_id(setting)
     s = get_all_adv_settings()
     return s.get(setting, None)
 
 
+@lru_cache(maxsize=1)
 def get_all_adv_settings() -> Dict[str, Setting]:
     """Get all the advanced setting values and definitions"""
     settings_file = CONFIG['feature_flags_file']
@@ -194,6 +203,8 @@ async def set_adv_setting(_id: str, value: Optional[bool]):
     _write_settings_file(setting_data.settings_map,
                          setting_data.version,
                          settings_file)
+    # Clear the lru cache
+    get_all_adv_settings.cache_clear()
 
 
 def _clean_id(_id: str) -> str:
@@ -303,7 +314,18 @@ def _migrate3to4(previous: SettingsMap) -> SettingsMap:
     return newmap
 
 
-_MIGRATIONS = [_migrate0to1, _migrate1to2, _migrate2to3, _migrate3to4]
+def _migrate4to5(previous: SettingsMap) -> SettingsMap:
+    """
+    Migration to version 5 of the feature flags file. Adds the
+    enableDoorSafetyFeature config element.
+    """
+    newmap = {k: v for k, v in previous.items()}
+    newmap['enableDoorSafetySwitch'] = None
+    return newmap
+
+
+_MIGRATIONS = [_migrate0to1, _migrate1to2, _migrate2to3, _migrate3to4,
+               _migrate4to5]
 """
 List of all migrations to apply, indexed by (version - 1). See _migrate below
 for how the migration functions are applied. Each migration function should
