@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import logging
 import pathlib
-import numpy as np
+import numpy as np  # type: ignore
 from collections import OrderedDict
 from typing import Dict, Union, List, Optional, Tuple
 from opentrons import types as top_types
